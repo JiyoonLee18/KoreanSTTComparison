@@ -5,7 +5,7 @@ predict_path='predict/'
 data_path='data/'
 
 # sample txt 파일 불러오기
-data=input("데이터 선택 입력해주세요: (저음질, eval_clean, eval_other, 감성발화 택1)")
+data=input("데이터 선택 입력해주세요: (저음질, eval_clean, eval_other, 감성발화 택1) ")
 if data=="저음질":
     file_name=data_path+"저음질 전화 음성/저음질_random.txt"
     predict=predict_path+'저음질_'
@@ -30,8 +30,8 @@ except Exception as e:
     print(f"파일 불러오기 중 오류가 발생했습니다: {e}")
 
 ## 예측
-model=input("모델 선택 입력해주세요: (etri, returnzero 택1)")
-if data=="etri":
+model=input("모델 선택 입력해주세요: (etri, returnzero 택1) ")
+if model=="etri":
     # 예측
     predicted_list=etri_stt(loaded_list)
     pdf=pd.DataFrame(predicted_list)
@@ -39,7 +39,7 @@ if data=="etri":
     predict=predict+'etri.csv'
     pdf.to_csv(predict, index=False)
 
-elif data=="returnzero":
+elif model=="returnzero":
     # 예측
     predicted_list=returnzero_stt(loaded_list)
     pdf=pd.DataFrame(predicted_list)
