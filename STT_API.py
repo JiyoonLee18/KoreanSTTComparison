@@ -4,8 +4,32 @@ import base64
 import time
 from tqdm import tqdm
 import requests
+import pandas as pd
 
-def etri_stt(loaded_list):
+# 텍스트 파일 및 오디오 파일 세팅
+def get_text(file_name, data):
+    if data=="저음질":
+        with open(file_name, 'r') as file:
+            answer_text = [line.strip() for line in file.readlines()][0]
+    elif data=="eval_clean" or data=="eval_other":
+        answer_text=file_name.split(':: ')[1]
+    elif data=="감성발화":
+        with open(file_name, 'r', encoding='utf-8') as file:
+            answer_text = json.load(file)
+            answer_text=answer_text['전사정보']['OrgLabelText']    
+    return answer_text
+
+def get_audioPath(file_name, data):
+    if data=="저음질":
+        audioFilePath = file_name.split('.')[0]+'.wav'
+    elif data=="eval_clean" or data=="eval_other":
+        audioFilePath='data/한국어 음성/sample/'+file_name.split('KsponSpeech_eval/')[1].split(' ::')[0].split('pcm')[0]+'wav'
+    elif data=="감성발화":
+        audioFilePath=file_name.replace('라벨링데이터','원천데이터').replace('json','wav')
+    return audioFilePath
+
+#etri
+def etri_stt(loaded_list, data):
 
     openApiURL = "http://aiopen.etri.re.kr:8000/WiseASR/Recognition"
     accessKey = input("api_key를 입력해주세요: ")
@@ -17,9 +41,8 @@ def etri_stt(loaded_list):
         # 시작 시간 기록
         start_time = time.time()
 
-        with open(file_name, 'r') as file:
-            answer_text = [line.strip() for line in file.readlines()][0]
-        audioFilePath = file_name.split('.')[0]+'.wav'
+        answer_text=get_text(file_name, data)
+        audioFilePath = get_audioPath(file_name, data)
         file = open(audioFilePath, "rb")
         audioContents = base64.b64encode(file.read()).decode("utf8")
         file.close()
@@ -48,16 +71,18 @@ def etri_stt(loaded_list):
         # 실행 시간 계산
         execution_time = end_time - start_time
         predicted_list.append([file_name, answer_text, recognized_text, execution_time])
-    return predicted_list
+        pdf=pd.DataFrame(predicted_list, columns=['file_name','answer_text', 'recognized_text', 'execution_time'])
+    return pdf
 
-def returnzero_stt(loaded_list):
+# returnzero
+def returnzero_stt(loaded_list, data):
     token= input("token을 입력해주세요: ")
     predicted_list=[]
     for file_name in tqdm(loaded_list):
-         # 텍스트 파일 열기
-        with open(file_name, 'r') as file:
-            answer_text = [line.strip() for line in file.readlines()][0]
-        audioFilePath=file_name.split('.')[0]+'.wav'
+        
+        # text, audiopath가져오기
+        answer_text=get_text(file_name, data)
+        audioFilePath = get_audioPath(file_name, data)
         
         start_time = time.time()
 
@@ -84,4 +109,42 @@ def returnzero_stt(loaded_list):
         # 실행 시간 계산
         execution_time = end_time - start_time
         predicted_list.append([file_name, answer_text, recognized_text, execution_time])
-    return predicted_list
+
+        pdf=pd.DataFrame(predicted_list, columns=['file_name','answer_text', 'recognized_text', 'execution_time'])
+    return pdf
+
+# 네이버
+def naver_stt(loaded_list, data):
+    client_id= input("client_id를 입력해주세요: ")
+    client_secret = input("client_secret를 입력해주세요: ")
+    lang = "Kor" # 언어 코드 ( Kor, Jpn, Eng, Chn )
+    url = "https://naveropenapi.apigw.ntruss.com/recog/v1/stt?lang=" + lang
+    
+    predicted_list=[]
+    
+    headers = {
+    "X-NCP-APIGW-API-KEY-ID": client_id,
+    "X-NCP-APIGW-API-KEY": client_secret,
+    "Content-Type": "application/octet-stream"
+}
+    
+    for file_name in tqdm(loaded_list):
+        # text, audiopath가져오기
+        answer_text=get_text(file_name, data)
+        audioFilePath = get_audioPath(file_name, data)
+        
+        # 시작 시간 기록
+        start_time = time.time()
+        
+        data = open(audioFilePath, 'rb')
+        response = requests.post(url,  data=data, headers=headers)
+        recognized_text=json.loads(response.text)['text']
+        
+        # 종료 시간 기록
+        end_time = time.time()
+
+        # 실행 시간 계산
+        execution_time = end_time - start_time
+        predicted_list.append([file_name, answer_text, recognized_text, execution_time])
+        pdf=pd.DataFrame(predicted_list, columns=['file_name','answer_text', 'recognized_text', 'execution_time'])
+    return pdf

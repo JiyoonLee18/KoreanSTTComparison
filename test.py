@@ -1,5 +1,5 @@
 import pandas as pd
-from STT_API import etri_stt, returnzero_stt
+from STT_API import etri_stt, returnzero_stt, naver_stt
 
 predict_path='predict/'
 data_path='data/'
@@ -10,10 +10,10 @@ if data=="저음질":
     file_name=data_path+"저음질 전화 음성/저음질_random.txt"
     predict=predict_path+'저음질_'
 elif data=="eval_clean":
-    file_name=data_path+"한국어 음성/eval_clean.txt"
+    file_name=data_path+"한국어 음성/sample/eval_clean.txt"
     predict=predict_path+'eval_clean_'
 elif data=="eval_other":
-    file_name=data_path+"한국어 음성/eval_other.txt"
+    file_name=data_path+"한국어 음성/sample/eval_other.txt"
     predict=predict_path+'eval_other_'
 elif data=="감성발화":
     file_name=data_path+"감성 발화/감성발화_random.txt"
@@ -30,21 +30,28 @@ except Exception as e:
     print(f"파일 불러오기 중 오류가 발생했습니다: {e}")
 
 ## 예측
-model=input("모델 선택 입력해주세요: (etri, returnzero 택1) ")
+model=input("모델 선택 입력해주세요: (etri, returnzero, naver 택1) ")
 if model=="etri":
     # 예측
-    predicted_list=etri_stt(loaded_list)
-    pdf=pd.DataFrame(predicted_list)
+    pdf=etri_stt(loaded_list, data)
     # 저장
     predict=predict+'etri.csv'
     pdf.to_csv(predict, index=False)
 
 elif model=="returnzero":
     # 예측
-    predicted_list=returnzero_stt(loaded_list)
-    pdf=pd.DataFrame(predicted_list)
+    pdf=returnzero_stt(loaded_list, data)
+
     # 저장
     predict=predict+'returnzero.csv'
+    pdf.to_csv(predict, index=False)
+
+elif model=="naver":
+    # 예측
+    pdf=naver_stt(loaded_list, data)
+
+    # 저장
+    predict=predict+'naver.csv'
     pdf.to_csv(predict, index=False)
 else:
     print("틀렸습니다. 이 파일을 재실행해주세요")
