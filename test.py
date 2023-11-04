@@ -5,17 +5,17 @@ predict_path='predict/'
 data_path='data/'
 
 # sample txt 파일 불러오기
-data=input("데이터 선택 입력해주세요: (저음질, eval_clean, eval_other, 감성발화 택1) ")
-if data=="저음질":
+dataset=input("데이터 선택 입력해주세요: (저음질, eval_clean, eval_other, 감성발화 택1) ")
+if dataset=="저음질":
     file_name=data_path+"저음질 전화 음성/저음질_random.txt"
     predict=predict_path+'저음질_'
-elif data=="eval_clean":
+elif dataset=="eval_clean":
     file_name=data_path+"한국어 음성/sample/eval_clean.txt"
     predict=predict_path+'eval_clean_'
-elif data=="eval_other":
+elif dataset=="eval_other":
     file_name=data_path+"한국어 음성/sample/eval_other.txt"
     predict=predict_path+'eval_other_'
-elif data=="감성발화":
+elif dataset=="감성발화":
     file_name=data_path+"감성 발화/감성발화_random.txt"
     predict=predict_path+'감성발화_'
 else:
@@ -33,22 +33,22 @@ except Exception as e:
 model=input("모델 선택 입력해주세요: (etri, returnzero, naver 택1) ")
 if model=="etri":
     # 예측
-    pdf=etri_stt(loaded_list, data)
+    pdf=etri_stt(loaded_list, dataset)
     # 저장
     predict=predict+'etri.csv'
     pdf.to_csv(predict, index=False)
 
 elif model=="returnzero":
     # 예측
-    pdf=returnzero_stt(loaded_list, data)
+    pdf=returnzero_stt(loaded_list, dataset)
 
     # 저장
     predict=predict+'returnzero.csv'
-    pdf.to_csv(predict, index=False)
+    # pdf.to_csv(predict, index=False)
 
 elif model=="naver":
     # 예측
-    pdf=naver_stt(loaded_list, data)
+    pdf=naver_stt(loaded_list, dataset)
 
     # 저장
     predict=predict+'naver.csv'
