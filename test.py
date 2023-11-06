@@ -1,5 +1,5 @@
 import pandas as pd
-from STT_API import etri_stt, returnzero_stt, naver_stt
+from STT_API import etri_stt, returnzero_stt, naver_stt, azure_stt, google_stt, whisper_stt
 
 predict_path='predict/'
 data_path='data/'
@@ -30,7 +30,7 @@ except Exception as e:
     print(f"파일 불러오기 중 오류가 발생했습니다: {e}")
 
 ## 예측
-model=input("모델 선택 입력해주세요: (etri, returnzero, naver 택1) ")
+model=input("모델 선택 입력해주세요: (etri, returnzero, naver, azure, google, whisper 택1) ")
 if model=="etri":
     # 예측
     pdf=etri_stt(loaded_list, dataset)
@@ -53,5 +53,30 @@ elif model=="naver":
     # 저장
     predict=predict+'naver.csv'
     pdf.to_csv(predict, index=False)
+
+elif model=="azure":
+    # 예측
+    pdf=azure_stt(loaded_list, dataset)
+
+    # 저장
+    predict=predict+'azure.csv'
+    pdf.to_csv(predict, index=False)
+
+elif model=="google":
+    # 예측
+    pdf=google_stt(loaded_list, dataset)
+
+    # 저장
+    predict=predict+'google.csv'
+    pdf.to_csv(predict, index=False)
+
+elif model=="whisper":
+    # 예측
+    pdf=whisper_stt(loaded_list, dataset)
+
+    # 저장
+    predict=predict+'whisper.csv'
+    pdf.to_csv(predict, index=False)
+
 else:
     print("틀렸습니다. 이 파일을 재실행해주세요")

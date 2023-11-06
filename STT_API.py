@@ -5,6 +5,18 @@ import time
 from tqdm import tqdm
 import requests
 import pandas as pd
+import string
+import threading
+import wave
+import azure.cognitiveservices.speech as speechsdk
+import io
+from pydub import AudioSegment
+from google.cloud import speech_v1p1beta1 as speech
+from google.oauth2 import service_account
+import os
+import openai
+
+AudioSegment.converter = "C:/Users/82105/Downloads/ffmpeg-6.0-full_build/bin/ffmpeg.exe"
 
 # 텍스트 파일 및 오디오 파일 세팅
 def get_text(file_name, dataset):
@@ -152,6 +164,117 @@ def naver_stt(loaded_list, dataset):
         except:
             recognized_text=''
         
+        # 종료 시간 기록
+        end_time = time.time()
+
+        # 실행 시간 계산
+        execution_time = end_time - start_time
+        predicted_list.append([file_name, answer_text, recognized_text, execution_time])
+    pdf=pd.DataFrame(predicted_list, columns=['file_name','answer_text', 'recognized_text', 'execution_time'])
+    return pdf
+
+# Azure
+def azure_stt(loaded_list, dataset):
+    speech_key=input("speech_key를 입력해주세요: ")
+    service_region="koreacentral"
+    
+    predicted_list=[]
+    
+    speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=service_region)
+    
+    for file_name in tqdm(loaded_list):
+        # text, audiopath가져오기
+        answer_text=get_text(file_name, dataset)
+        audioFilePath = get_audioPath(file_name, dataset)
+        
+        # 시작 시간 기록
+        start_time = time.time()
+        
+        audio_config = speechsdk.audio.AudioConfig(filename=audioFilePath)
+        # Creates a speech recognizer using a file as audio input, also specify the speech language
+        speech_recognizer = speechsdk.SpeechRecognizer(
+            speech_config=speech_config, language="ko-KR", audio_config=audio_config)
+
+        result = speech_recognizer.recognize_once()
+
+        if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+            recognized_text=result.text
+        else:
+            recognized_text=""
+        # 종료 시간 기록
+        end_time = time.time()
+                
+        # 실행 시간 계산
+        execution_time = end_time - start_time
+        predicted_list.append([file_name, answer_text, recognized_text, execution_time])
+    pdf=pd.DataFrame(predicted_list, columns=['file_name','answer_text', 'recognized_text', 'execution_time'])
+    return pdf
+
+def google_stt(loaded_list, dataset):
+    client_file='sa_speech_demo.json'
+    credentials=service_account.Credentials.from_service_account_file(client_file)
+    client = speech.SpeechClient(credentials=credentials)
+    
+    predicted_list=[]
+    
+    for file_name in tqdm(loaded_list):
+        # text, audiopath가져오기
+        answer_text=get_text(file_name, dataset)
+        audioFilePath = get_audioPath(file_name, dataset)
+        
+        # 시작 시간 기록
+        start_time = time.time()
+        
+        # WAV 파일을 읽어와서 스테레오를 모노로 변환
+        audio = AudioSegment.from_file(audioFilePath)
+        audio = audio.set_channels(1)
+        content = audio.raw_data
+
+        audio = speech.RecognitionAudio(content=content)
+        config = speech.RecognitionConfig(
+            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=8000,
+            language_code="ko-KR",
+        )
+
+        response = client.recognize(config=config, audio=audio)
+        
+        try: 
+            recognized_text=response.results[0].alternatives[0].transcript
+        except:
+            recognized_text=''
+            
+        # 종료 시간 기록
+        end_time = time.time()
+
+        # 실행 시간 계산
+        execution_time = end_time - start_time
+        predicted_list.append([file_name, answer_text, recognized_text, execution_time])
+    pdf=pd.DataFrame(predicted_list, columns=['file_name','answer_text', 'recognized_text', 'execution_time'])
+    return pdf
+
+def whisper_stt(loaded_list, dataset):
+    api_key = input("api_key를 입력해주세요: ")
+    openai.api_key = api_key
+    
+    predicted_list=[]
+    
+    for file_name in tqdm(loaded_list):
+        # text, audiopath가져오기
+        answer_text=get_text(file_name, dataset)
+        audioFilePath = get_audioPath(file_name, dataset)
+        
+        # 시작 시간 기록
+        start_time = time.time()
+        
+        audio_file = open(audioFilePath, "rb")
+        transcript = openai.Audio.transcribe("whisper-1", audio_file, language="ko")
+        
+        try: 
+            recognized_text=transcript['text']
+        except:
+            recognized_text=''
+            
         # 종료 시간 기록
         end_time = time.time()
 
