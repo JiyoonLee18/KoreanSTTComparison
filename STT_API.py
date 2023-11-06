@@ -216,7 +216,7 @@ def google_stt(loaded_list, dataset):
     client = speech.SpeechClient(credentials=credentials)
     
     predicted_list=[]
-    
+
     for file_name in tqdm(loaded_list):
         # text, audiopath가져오기
         answer_text=get_text(file_name, dataset)
@@ -225,6 +225,9 @@ def google_stt(loaded_list, dataset):
         # 시작 시간 기록
         start_time = time.time()
         
+        with wave.open(audioFilePath, "rb") as wav_file:
+                sample_rate = wav_file.getframerate()
+
         # WAV 파일을 읽어와서 스테레오를 모노로 변환
         audio = AudioSegment.from_file(audioFilePath)
         audio = audio.set_channels(1)
@@ -233,7 +236,7 @@ def google_stt(loaded_list, dataset):
         audio = speech.RecognitionAudio(content=content)
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-            sample_rate_hertz=8000,
+            sample_rate_hertz=sample_rate,
             language_code="ko-KR",
         )
 
@@ -264,22 +267,27 @@ def whisper_stt(loaded_list, dataset):
         answer_text=get_text(file_name, dataset)
         audioFilePath = get_audioPath(file_name, dataset)
         
-        # 시작 시간 기록
-        start_time = time.time()
-        
-        audio_file = open(audioFilePath, "rb")
-        transcript = openai.Audio.transcribe("whisper-1", audio_file, language="ko")
-        
-        try: 
-            recognized_text=transcript['text']
-        except:
-            recognized_text=''
+        try:
+            # 시작 시간 기록
+            start_time = time.time()
             
-        # 종료 시간 기록
-        end_time = time.time()
+            audio_file = open(audioFilePath, "rb")
+            transcript = openai.Audio.transcribe("whisper-1", audio_file, language="ko")
+            
+            try: 
+                recognized_text=transcript['text']
+            except:
+                recognized_text=''
+                
+            # 종료 시간 기록
+            end_time = time.time()
 
-        # 실행 시간 계산
-        execution_time = end_time - start_time
+            # 실행 시간 계산
+            execution_time = end_time - start_time
+        except:
+            recognized_text="error"
+            execution_time="error"
+            print("error, file: ",audioFilePath)
         predicted_list.append([file_name, answer_text, recognized_text, execution_time])
     pdf=pd.DataFrame(predicted_list, columns=['file_name','answer_text', 'recognized_text', 'execution_time'])
     return pdf
