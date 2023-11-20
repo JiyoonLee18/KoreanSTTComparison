@@ -149,7 +149,10 @@ def get_cerwer(df, modified_df):
         wer=result_wer['wer']
         modified_df.iloc[i, 4]=cer
         modified_df.iloc[i, 5]=wer
-    tmp = modified_df.loc[modified_df.groupby(['file_name','answer_text'])['cer'].idxmin()]
+        # 그룹별 최솟값 계산
+    min_indices = modified_df.groupby(['file_name', 'answer_text'])[['cer', 'wer']].idxmin()
+    # 최솟값을 가진 행들 가져오기
+    tmp = modified_df.loc[min_indices['cer']]
     tmp.drop(columns=['recognized_text', 'answer_text'], axis=1, inplace=True)
     total=pd.merge(df, tmp, how='inner', on='file_name')
     return total
